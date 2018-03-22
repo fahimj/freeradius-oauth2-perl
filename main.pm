@@ -128,21 +128,22 @@ sub authorize {
 	my $realm = lc $RAD_REQUEST{'Realm'};
 
 	if ($cfg->{$realm}->{'vendor'} eq 'microsoft-azure') {
-		my $url = "https://graph.windows.net/$realm/users?api-version=1.5&\$top=999&\$filter=accountEnabled+eq+true";
-		my $jsonpath = '$.value[*].userPrincipalName';
+	# Here I skipped the first request.
+# 		my $url = "https://graph.windows.net/$realm/users?api-version=1.5&\$top=999&\$filter=accountEnabled+eq+true";
+# 		my $jsonpath = '$.value[*].userPrincipalName';
+
+# 		my ($j, @results) = _handle_jsonpath($realm, $url, $jsonpath);
+
+# 		return RLM_MODULE_FAIL
+# 			unless (defined($j));
+
+# 		return RLM_MODULE_NOTFOUND
+# 			unless (grep { $_ eq lc $RAD_REQUEST{'Stripped-User-Name'} } map { s/@[^@]*$//; lc $_ } @results);
+
+		my $url = "https://graph.windows.net/$realm/users/$RAD_REQUEST{'User-Name'}/memberOf?api-version=1.5&\$top=999";
+		my $jsonpath = '$.value[?($_->{objectType} eq "Group" && $_->{securityEnabled} eq "true")].displayName';
 
 		my ($j, @results) = _handle_jsonpath($realm, $url, $jsonpath);
-
-		return RLM_MODULE_FAIL
-			unless (defined($j));
-
-		return RLM_MODULE_NOTFOUND
-			unless (grep { $_ eq lc $RAD_REQUEST{'Stripped-User-Name'} } map { s/@[^@]*$//; lc $_ } @results);
-
-		$url = "https://graph.windows.net/$realm/users/$RAD_REQUEST{'User-Name'}/memberOf?api-version=1.5&\$top=999";
-		$jsonpath = '$.value[?($_->{objectType} eq "Group" && $_->{securityEnabled} eq "true")].displayName';
-
-		($j, @results) = _handle_jsonpath($realm, $url, $jsonpath);
 
 		return RLM_MODULE_FAIL
 			unless (defined($j));
